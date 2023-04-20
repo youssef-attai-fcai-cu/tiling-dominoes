@@ -1,11 +1,3 @@
-% Given a board N x M, find all possible combinations of domino pieces that can be placed on the board.
-
-% The domino pieces are 2x1, and can be rotated.
-
-% The board is a grid of squares, and the domino pieces can be placed on the squares.
-
-% The domino pieces can be placed on the squares in any orientation.
-
 dominoes(N, M, D) :- findall(D, domino(N, M, D), Ds), sort(Ds, D).
 
 domino(N, M, D) :- 
@@ -18,48 +10,26 @@ domino(N, M, D) :-
 domino(X, Y, X1, Y1, D) :- D = [[X, Y], [X1, Y1]], X1 is X + 1, Y1 is Y.
 domino(X, Y, X1, Y1, D) :- D = [[X, Y], [X1, Y1]], X1 is X, Y1 is Y + 1.
 
-% solvePuzzle(Width, Height, Occupied):-
-%   domino(Width, Height, [Cell1, Cell2]),
-%   \+member(Cell1, Occupied),
-%   \+member(Cell2, Occupied),
-%   writeln([Cell1, Cell2]),
-%   solvePuzzle(Width, Height, [Cell1, Cell2|Occupied]).
-% solvePuzzle(Width, Height, _):-
-%   \+domino(Width, Height, [_,_]),
-%   writeln(true),
-%   fail.
-
-% solvePuzzle(Width, Height, Occupied):-
-%   once((domino(Width, Height, [Cell1, Cell2]),
-%          \+member(Cell1, Occupied),
-%          \+member(Cell2, Occupied),
-%          writeln([Cell1, Cell2]),
-%          solvePuzzle(Width, Height, [Cell1, Cell2|Occupied]))).
-% solvePuzzle(_, _, _).
-
 filterDominoes(Ds, Cell, FilteredDs) :-
   exclude(containsCell(Cell), Ds, FilteredDs).
 
 containsCell(Cell, Domino) :-
   member(Cell, Domino).
 
-% solvePuzzle(Width, Height, Occupied):-
-%   domino(Width, Height, [Cell1, Cell2]),
-%   not(member(Cell1, Occupied)),
-%   not(member(Cell2, Occupied)),
-%   write([Cell1, Cell2]), nl,
-%   solvePuzzle(Width, Height, [Cell1, Cell2|Occupied]).
-
-solvePuzzle(Width, Height):-
+solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y):-
   dominoes(Width, Height, Available),
-  solvePuzzle(Width, Height, Available).
+  Bomb1 = [Bomb1X, Bomb1Y],
+  Bomb2 = [Bomb2X, Bomb2Y],
+  filterDominoes(Available, Bomb1, FilteredAvailable1),
+  filterDominoes(FilteredAvailable1, Bomb2, FilteredAvailable2),
+  solvePuzzle(Width, Height, FilteredAvailable2, []).
 
-solvePuzzle(Width, Height, Available):-
+solvePuzzle(Width, Height, Available, Board):-
   domino(Width, Height, [Cell1, Cell2]),
   member([Cell1, Cell2], Available),
-  write([Cell1, Cell2]), nl,
+  not(member([Cell1, Cell2], Board)),
+  NewBoard = [[Cell1, Cell2] | Board],
   filterDominoes(Available, Cell1, FilteredAvailable1),
   filterDominoes(FilteredAvailable1, Cell2, FilteredAvailable2),
-  (FilteredAvailable2 = [] -> true; solvePuzzle(Width, Height, FilteredAvailable2)).
-% solvePuzzle(_, _, _).
+  (FilteredAvailable2 = [] -> (write(NewBoard), true); solvePuzzle(Width, Height, FilteredAvailable2, NewBoard)).
 
