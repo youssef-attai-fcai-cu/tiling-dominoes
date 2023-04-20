@@ -18,16 +18,19 @@ filterDominoes(Ds, Cell, FilteredDs) :-
 containsCell(Cell, Domino) :-
   member(Cell, Domino).
 
+getAllSolutions(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solutions):-
+  findall(Solution, solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solution), Solutions).
+
 % Use this
-solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y):-
+solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solution):-
   dominoes(Width, Height, Available),
   Bomb1 = [Bomb1X, Bomb1Y],
   Bomb2 = [Bomb2X, Bomb2Y],
   filterDominoes(Available, Bomb1, FilteredAvailable1),
   filterDominoes(FilteredAvailable1, Bomb2, FilteredAvailable2),
-  solvePuzzle(Width, Height, FilteredAvailable2, []).
+  solvePuzzle(Width, Height, FilteredAvailable2, [], Solution).
 
-solvePuzzle(Width, Height, Available, Board):-
+solvePuzzle(Width, Height, Available, Board, Solution):-
   domino(Width, Height, [Cell1, Cell2]),
   member([Cell1, Cell2], Available),
   not(member([Cell1, Cell2], Board)),
@@ -37,8 +40,8 @@ solvePuzzle(Width, Height, Available, Board):-
   (
     FilteredAvailable2 = [] % condition
     -> % If the condition is true, then do this
-      (write(NewBoard), true)
+      (Solution = NewBoard, true)
     ; % otherwise do this
-    solvePuzzle(Width, Height, FilteredAvailable2, NewBoard)
+    solvePuzzle(Width, Height, FilteredAvailable2, NewBoard, Solution)
   ).
 
