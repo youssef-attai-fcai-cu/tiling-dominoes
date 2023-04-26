@@ -10,6 +10,9 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python main.py <problem>")
         print("Please provide a problem to solve")
+        print("Examples:")
+        print("$ python main.py uninformed")
+        print("$ python main.py informed")
         sys.exit(1)
 
     problem = sys.argv[1]
