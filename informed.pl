@@ -1,56 +1,73 @@
-dominoes(N, M, D) :- findall(D, domino(N, M, D), Ds), sort(Ds, D).
+%% Get all possible dominoes for a given board size in a list
+dominoes(Width, Height, Dominoes) :-
+    findall(Domino, domino(Width, Height, Domino), Dominoes).
 
-domino(N, M, D) :- 
+%% Get all possible dominoes for a given board size one by one
+domino(Width, Height, Domino) :- 
   % Get all possible pairs of cells
-  between(1, N, X), 
-  between(1, M, Y), 
-  between(1, N, X1), 
-  between(1, M, Y1),
-  % Only return the pairs that resembles a domino
-  domino(X, Y, X1, Y1, D).
+  between(1, Width, Cell1X), 
+  between(1, Height, Cell1Y), 
+  between(1, Width, Cell2X), 
+  between(1, Height, Cell2Y),
 
-domino(X, Y, X1, Y1, D) :- D = [[X, Y], [X1, Y1]], X1 is X + 1, Y1 is Y. % Adjacent horizontally
-domino(X, Y, X1, Y1, D) :- D = [[X, Y], [X1, Y1]], X1 is X, Y1 is Y + 1. % Adjacent vertically
+  % Only return the pairs that resemble a domino
+  domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino).
 
-filterDominoes(Ds, Cell, FilteredDs) :-
-  exclude(containsCell(Cell), Ds, FilteredDs).
 
-containsCell(Cell, Domino) :-
-  member(Cell, Domino).
+%% Domino rules (what makes two cells a domino)
+domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino) :- % Horizontal domino
+    Domino = [[Cell1X, Cell1Y], [Cell2X, Cell2Y]], Cell2X is Cell1X + 1, Cell2Y is Cell1Y. 
+domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino) :- % Vertical domino
+    Domino = [[Cell1X, Cell1Y], [Cell2X, Cell2Y]], Cell2X is Cell1X, Cell2Y is Cell1Y + 1. 
 
+% Remove all dominoes that contain a given cell
+removeOverlappingDominoes(Dominoes, Cell, RestDominoes) :-
+    % For each domino, check if it contains the cell
+    % If the cell is not part of the domino, keep the domino
+    % If the cell is part of the domino, remove the domino
+    exclude(member(Cell), Dominoes, RestDominoes).
+
+% Collect all solutions in a list for Python to use
 getAllSolutions(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solutions):-
-  findall(Solution, solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solution), Solutions).
+    findall(Solution, solve(Width, Height, [Bomb1X, Bomb1Y], [Bomb2X, Bomb2Y], Solution), Solutions).
 
-% Use this
-solvePuzzle(Width, Height, Bomb1X, Bomb1Y, Bomb2X, Bomb2Y, Solution):-
-  dominoes(Width, Height, Available),
-  Bomb1 = [Bomb1X, Bomb1Y],
-  Bomb2 = [Bomb2X, Bomb2Y],
-  filterDominoes(Available, Bomb1, FilteredAvailable1),
-  filterDominoes(FilteredAvailable1, Bomb2, FilteredAvailable2),
-  solvePuzzle(Width, Height, FilteredAvailable2, [], Solution).
+%%% Use this predicate %%%
+%%% Usage: solve(3, 3, [1, 3], [2, 1], Solution). %%%
+solve(Width, Height, Bomb1, Bomb2, Solution):-
+    % First, get all possible dominoes for the given board size
+    dominoes(Width, Height, AllDominoes), 
+    % Remove the dominoes that overlap with the first bomb
+    removeOverlappingDominoes(AllDominoes, Bomb1, AllDominoesNotOverlappingBomb1), 
+    % And remove the dominoes that overlap with the second bomb
+    removeOverlappingDominoes(AllDominoesNotOverlappingBomb1, Bomb2, AllDominoesNotOverlappingBomb1AndBomb2), 
+    % Now we have all possible dominoes that do not overlap with the bombs
+    AvailableMoves = AllDominoesNotOverlappingBomb1AndBomb2,
+    % Find a solution by trying all possible dominoes while traversing the search tree
+    findOneSolution(Width, Height, AvailableMoves, [], Solution).
 
-solvePuzzle(Width, Height, Available, Board, Solution):-
-  domino(Width, Height, [Cell1, Cell2]),
-  member([Cell1, Cell2], Available),
-  not(member([Cell1, Cell2], Board)),
-  % nl, write("Domino: "), write([Cell1, Cell2]), nl,
-  % write("Board: "), write(Board), nl,
-  NewBoard = [[Cell1, Cell2] | Board],
-  filterDominoes(Available, Cell1, FilteredAvailable1),
-  filterDominoes(FilteredAvailable1, Cell2, FilteredAvailable2),
-  % Number of pieces on the board + Number of moves can be played >= Number of empty cells (initially) / 2
-  length(NewBoard, NumPiecesOnBoard),
-  length(FilteredAvailable2, NumMovesCanBePlayed),
-  NumEmptyCells is (Width * Height) - 2,
-  floor((NumEmptyCells / 2), F),
-  NumPiecesOnBoard + NumMovesCanBePlayed >= F,
-  % write("NewBoard: "), write(NewBoard), nl,
-  (
-    FilteredAvailable2 = [] % condition
-    -> % If the condition is true, then do this
-      (Solution = NewBoard, true)
-    ; % otherwise do this
-    solvePuzzle(Width, Height, FilteredAvailable2, NewBoard, Solution)
-  ).
+% Traverse the search tree by trying all possible dominoes
+findOneSolution(Width, Height, AvailableMoves, CurrentBoard, Solution):-
+    % Get a domino from the list of available moves
+    member([Cell1, Cell2], AvailableMoves),
+    % Make sure the domino is not already in the board
+    not(member([Cell1, Cell2], CurrentBoard)),
+    % Add the domino to the board
+    NewBoard = [[Cell1, Cell2] | CurrentBoard],
+    % Remove the dominoes that overlap with the cells of the domino we just added
+    removeOverlappingDominoes(AvailableMoves, Cell1, AvailableMovesNotOverlappingCell1),
+    removeOverlappingDominoes(AvailableMovesNotOverlappingCell1, Cell2, AvailableMovesNotOverlappingCell1AndCell2),
+    % Now we have a new list of available moves
+    NewAvailableMoves = AvailableMovesNotOverlappingCell1AndCell2,
+
+    % Heuristic:
+    %   # pieces on the board + # moves that can be played >= # (initially empty cells initially) / 2
+    length(NewBoard, NumPiecesOnBoard),
+    length(NewAvailableMoves, NumMovesCanBePlayed),
+    NumEmptyCells is (Width * Height) - 2,
+    floor((NumEmptyCells / 2), F),
+    NumPiecesOnBoard + NumMovesCanBePlayed >= F,
+
+    (NewAvailableMoves = [] % If there are no more available moves, we have found a solution
+    -> (Solution = NewBoard, true) % Return the solution and stop traversing the search tree by using 'true'
+    ; findOneSolution(Width, Height, NewAvailableMoves, NewBoard, Solution)). % Otherwise, keep traversing the search tree
 
