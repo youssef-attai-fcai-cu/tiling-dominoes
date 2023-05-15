@@ -1,13 +1,13 @@
 %% Get all possible dominoes for a given board size in a list
-dominoes(Width, Height, Dominoes) :-
+dominoes(Width, Height, Dominoes):-
     findall(Domino, domino(Width, Height, Domino), Dominoes).
 
 %% Get all possible dominoes for a given board size one by one
-domino(Width, Height, Domino) :- 
+domino(Width, Height, Domino):- 
   % Get all possible pairs of cells
-  between(1, Width, Cell1X), 
-  between(1, Height, Cell1Y), 
-  between(1, Width, Cell2X), 
+  between(1, Width, Cell1X),
+  between(1, Height, Cell1Y),
+  between(1, Width, Cell2X),
   between(1, Height, Cell2Y),
 
   % Only return the pairs that resemble a domino
@@ -15,13 +15,13 @@ domino(Width, Height, Domino) :-
 
 
 %% Domino rules (what makes two cells a domino)
-domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino) :- % Horizontal domino
+domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino):- % Horizontal domino
     Domino = [[Cell1X, Cell1Y], [Cell2X, Cell2Y]], Cell2X is Cell1X + 1, Cell2Y is Cell1Y. 
-domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino) :- % Vertical domino
+domino(Cell1X, Cell1Y, Cell2X, Cell2Y, Domino):- % Vertical domino
     Domino = [[Cell1X, Cell1Y], [Cell2X, Cell2Y]], Cell2X is Cell1X, Cell2Y is Cell1Y + 1. 
 
 % Remove all dominoes that contain a given cell
-removeOverlappingDominoes(Dominoes, Cell, RestDominoes) :-
+removeOverlappingDominoes(Dominoes, Cell, RestDominoes):-
     % For each domino, check if it contains the cell
     % If the cell is not part of the domino, keep the domino
     % If the cell is part of the domino, remove the domino
